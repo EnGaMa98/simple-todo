@@ -9,6 +9,21 @@ const EMPTY_MESSAGES = {
     description:
       'Todo lo pendiente esta resuelto o todavia no has cargado nuevas tareas.',
   },
+  today: {
+    title: 'Nada para hoy',
+    description:
+      'No hay tareas con fecha de hoy. Puedes mover foco a proximas o planificar nuevas.',
+  },
+  upcoming: {
+    title: 'Sin proximas fechas',
+    description:
+      'Aun no has programado tareas futuras. Las etiquetas y fechas ayudan a ver carga real.',
+  },
+  overdue: {
+    title: 'Nada vencido',
+    description:
+      'No hay tareas atrasadas. Buen momento para mantener el ritmo antes de que se acumulen.',
+  },
   completed: {
     title: 'No hay tareas completadas',
     description:
@@ -21,7 +36,7 @@ export function EmptyState({ filter, searchQuery }) {
   const message = normalizedQuery
     ? {
         title: 'Sin coincidencias',
-        description: `No encontramos tareas para "${normalizedQuery}". Prueba con otra palabra o revisa el filtro activo.`,
+        description: `No encontramos tareas para "${normalizedQuery}". Prueba con otra palabra, etiqueta o revisa el filtro activo.`,
       }
     : EMPTY_MESSAGES[filter]
 

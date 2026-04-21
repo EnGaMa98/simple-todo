@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { PRIORITY_OPTIONS, PRIORITY_META } from '../constants/priorities'
+import {
+  formatDateLabel,
+  getDueDateLabel,
+  getTaskDueState,
+} from '../utils/tasks'
 
-const formatDate = (isoDate) => {
-  if (!isoDate) {
-    return 'sin fecha'
-  }
-
-  return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(isoDate))
-}
+const formatDate = (isoDate) =>
+  isoDate
+    ? new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(isoDate))
+    : 'sin fecha'
 
 export function TaskItem({
   task,
@@ -23,12 +25,18 @@ export function TaskItem({
   const [isEditing, setIsEditing] = useState(false)
   const [draftTitle, setDraftTitle] = useState(task.title)
   const [draftPriority, setDraftPriority] = useState(task.priority ?? 'medium')
+  const [draftDueDate, setDraftDueDate] = useState(task.dueDate ?? '')
+  const [draftTags, setDraftTags] = useState((task.tags ?? []).join(', '))
 
   const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium
+  const dueState = task.completed ? 'completed' : getTaskDueState(task)
+  const dueDateLabel = getDueDateLabel(task)
 
   const openEditor = () => {
     setDraftTitle(task.title)
     setDraftPriority(task.priority ?? 'medium')
+    setDraftDueDate(task.dueDate ?? '')
+    setDraftTags((task.tags ?? []).join(', '))
     setIsEditing(true)
   }
 
@@ -45,6 +53,8 @@ export function TaskItem({
     onUpdateTask(task.id, {
       title: trimmedTitle,
       priority: draftPriority,
+      dueDate: draftDueDate || null,
+      tags: draftTags,
     })
     setIsEditing(false)
   }
@@ -52,6 +62,8 @@ export function TaskItem({
   const handleCancel = () => {
     setDraftTitle(task.title)
     setDraftPriority(task.priority ?? 'medium')
+    setDraftDueDate(task.dueDate ?? '')
+    setDraftTags((task.tags ?? []).join(', '))
     setIsEditing(false)
   }
 
@@ -83,6 +95,7 @@ export function TaskItem({
             <span className={`task-priority priority-${task.priority}`}>
               {priorityMeta.label}
             </span>
+            <span className={`task-due due-${dueState}`}>{dueDateLabel}</span>
             <span
               className={`task-status ${
                 task.completed ? 'status-completed' : 'status-active'
@@ -103,6 +116,32 @@ export function TaskItem({
                 onKeyDown={handleKeyDown}
                 autoFocus
               />
+
+              <div className="task-editor-grid">
+                <label className="field-stack" htmlFor={`due-${task.id}`}>
+                  <span className="field-label">Fecha limite</span>
+                  <input
+                    id={`due-${task.id}`}
+                    className="date-input"
+                    type="date"
+                    value={draftDueDate}
+                    onChange={(event) => setDraftDueDate(event.target.value)}
+                  />
+                </label>
+
+                <label className="field-stack" htmlFor={`tags-${task.id}`}>
+                  <span className="field-label">Etiquetas</span>
+                  <input
+                    id={`tags-${task.id}`}
+                    className="tags-input"
+                    type="text"
+                    value={draftTags}
+                    onChange={(event) => setDraftTags(event.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="cliente, sprint, casa"
+                  />
+                </label>
+              </div>
 
               <div className="priority-picker priority-picker-inline">
                 {PRIORITY_OPTIONS.map((option) => (
@@ -125,6 +164,23 @@ export function TaskItem({
               <p className="task-helper">
                 {priorityMeta.helper} - Creada {formatDate(task.createdAt)}
               </p>
+              {task.tags?.length > 0 ? (
+                <div className="task-tags" aria-label="Etiquetas de la tarea">
+                  {task.tags.map((tag) => (
+                    <span key={tag} className="tag-chip">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {task.dueDate ? (
+                <p className="task-helper">
+                  Fecha objetivo {formatDateLabel(task.dueDate, {
+                    day: '2-digit',
+                    month: 'long',
+                  })}
+                </p>
+              ) : null}
             </>
           )}
         </div>

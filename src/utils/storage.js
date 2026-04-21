@@ -1,4 +1,5 @@
 import { PRIORITY_META } from '../constants/priorities'
+import { normalizeTagsInput } from './tasks'
 
 const STORAGE_KEY = 'portfolio-todo-list'
 
@@ -28,6 +29,11 @@ export const loadTasks = () => {
         createdAt: task.createdAt ?? null,
         updatedAt: task.updatedAt ?? task.createdAt ?? null,
         priority: PRIORITY_META[task.priority] ? task.priority : 'medium',
+        dueDate:
+          typeof task.dueDate === 'string' && task.dueDate.trim()
+            ? task.dueDate
+            : null,
+        tags: normalizeTagsInput(task.tags),
       }))
   } catch {
     return []
