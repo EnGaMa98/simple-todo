@@ -16,8 +16,10 @@ import {
   getDueDateLabel,
   getFilterCounts,
   getFocusTask,
+  getSubtaskStats,
   getTaskDueState,
   isTaskArchived,
+  normalizeSubtasks,
   normalizeTagsInput,
   sortTasks,
 } from './utils/tasks'
@@ -32,6 +34,7 @@ const createTask = ({ title, priority, dueDate, tags }) => {
     priority,
     dueDate,
     tags: normalizeTagsInput(tags),
+    subtasks: [],
     archivedAt: null,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -149,6 +152,12 @@ function App() {
           return {
             ...task,
             completed: !task.completed,
+            subtasks: task.completed
+              ? task.subtasks
+              : task.subtasks.map((subtask) => ({
+                  ...subtask,
+                  completed: true,
+                })),
             updatedAt: new Date().toISOString(),
           }
         }),
@@ -176,6 +185,10 @@ function App() {
             priority: updates.priority ?? task.priority,
             dueDate: updates.dueDate || null,
             tags: normalizeTagsInput(updates.tags),
+            subtasks:
+              updates.subtasks !== undefined
+                ? normalizeSubtasks(updates.subtasks)
+                : task.subtasks,
             updatedAt: new Date().toISOString(),
           }
         }),
@@ -249,6 +262,92 @@ function App() {
 
     setTasks(undoState.previousTasks)
     setUndoState(null)
+  }
+
+  const handleAddSubtask = (taskId, title) => {
+    const trimmedTitle = title.trim()
+
+    if (!trimmedTitle) {
+      return
+    }
+
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
+
+          return {
+            ...task,
+            subtasks: [
+              ...task.subtasks,
+              {
+                id: crypto.randomUUID(),
+                title: trimmedTitle,
+                completed: false,
+              },
+            ],
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      null,
+    )
+  }
+
+  const handleToggleSubtask = (taskId, subtaskId) => {
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
+
+          const nextSubtasks = task.subtasks.map((subtask) => {
+            if (subtask.id !== subtaskId) {
+              return subtask
+            }
+
+            return {
+              ...subtask,
+              completed: !subtask.completed,
+            }
+          })
+
+          const subtaskStats = getSubtaskStats({ subtasks: nextSubtasks })
+
+          return {
+            ...task,
+            completed:
+              task.completed && subtaskStats.remaining === 0
+                ? true
+                : task.completed && subtaskStats.remaining > 0
+                  ? false
+                  : task.completed,
+            subtasks: nextSubtasks,
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      null,
+    )
+  }
+
+  const handleDeleteSubtask = (taskId, subtaskId) => {
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
+
+          return {
+            ...task,
+            subtasks: task.subtasks.filter((subtask) => subtask.id !== subtaskId),
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      null,
+    )
   }
 
   return (
@@ -356,9 +455,12 @@ function App() {
             filter={activeFilter}
             searchQuery={searchQuery}
             tasks={filteredTasks}
+            onAddSubtask={handleAddSubtask}
             onArchiveTask={handleArchiveTask}
+            onDeleteSubtask={handleDeleteSubtask}
             onDeleteTask={handleDeleteTask}
             onRestoreTask={handleRestoreTask}
+            onToggleSubtask={handleToggleSubtask}
             onToggleTask={handleToggleTask}
             onUpdateTask={handleUpdateTask}
           />

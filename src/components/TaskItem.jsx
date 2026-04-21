@@ -3,6 +3,7 @@ import { PRIORITY_OPTIONS, PRIORITY_META } from '../constants/priorities'
 import {
   formatDateLabel,
   getDueDateLabel,
+  getSubtaskStats,
   getTaskDueState,
 } from '../utils/tasks'
 
@@ -18,9 +19,12 @@ const formatDate = (isoDate) =>
 
 export function TaskItem({
   task,
+  onAddSubtask,
   onArchiveTask,
+  onDeleteSubtask,
   onDeleteTask,
   onRestoreTask,
+  onToggleSubtask,
   onToggleTask,
   onUpdateTask,
 }) {
@@ -29,9 +33,12 @@ export function TaskItem({
   const [draftPriority, setDraftPriority] = useState(task.priority ?? 'medium')
   const [draftDueDate, setDraftDueDate] = useState(task.dueDate ?? '')
   const [draftTags, setDraftTags] = useState((task.tags ?? []).join(', '))
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
 
   const isArchived = Boolean(task.archivedAt)
+  const isSubtaskReadOnly = isArchived || task.completed
   const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium
+  const subtaskStats = getSubtaskStats(task)
   const dueState = isArchived
     ? 'archived'
     : task.completed
@@ -84,6 +91,17 @@ export function TaskItem({
     }
   }
 
+  const handleSubtaskSubmit = (event) => {
+    event.preventDefault()
+
+    if (!newSubtaskTitle.trim()) {
+      return
+    }
+
+    onAddSubtask(task.id, newSubtaskTitle)
+    setNewSubtaskTitle('')
+  }
+
   return (
     <li
       className={`task-item ${task.completed ? 'is-completed' : ''} ${
@@ -113,6 +131,11 @@ export function TaskItem({
               {priorityMeta.label}
             </span>
             <span className={`task-due due-${dueState}`}>{dueDateLabel}</span>
+            {subtaskStats.total > 0 ? (
+              <span className="task-subtask-progress">
+                {subtaskStats.completed}/{subtaskStats.total} pasos
+              </span>
+            ) : null}
             <span
               className={`task-status ${
                 isArchived
@@ -210,6 +233,52 @@ export function TaskItem({
                     month: 'long',
                   })}
                 </p>
+              ) : null}
+              {task.subtasks.length > 0 ? (
+                <ul className="subtask-list" aria-label="Checklist de subtareas">
+                  {task.subtasks.map((subtask) => (
+                    <li
+                      key={subtask.id}
+                      className={`subtask-item ${
+                        subtask.completed ? 'is-completed' : ''
+                      }`}
+                    >
+                      <label className="subtask-toggle">
+                        <input
+                          type="checkbox"
+                          checked={subtask.completed}
+                          disabled={isSubtaskReadOnly}
+                          onChange={() => onToggleSubtask(task.id, subtask.id)}
+                        />
+                        <span>{subtask.title}</span>
+                      </label>
+                      {!isSubtaskReadOnly ? (
+                        <button
+                          className="subtask-delete"
+                          type="button"
+                          onClick={() => onDeleteSubtask(task.id, subtask.id)}
+                          aria-label={`Eliminar subtarea ${subtask.title}`}
+                        >
+                          Quitar
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {!isSubtaskReadOnly ? (
+                <form className="subtask-form" onSubmit={handleSubtaskSubmit}>
+                  <input
+                    className="subtask-input"
+                    type="text"
+                    value={newSubtaskTitle}
+                    onChange={(event) => setNewSubtaskTitle(event.target.value)}
+                    placeholder="Anadir subtarea..."
+                  />
+                  <button className="ghost-button" type="submit">
+                    Anadir paso
+                  </button>
+                </form>
               ) : null}
             </>
           )}

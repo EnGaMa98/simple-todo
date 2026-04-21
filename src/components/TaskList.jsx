@@ -5,9 +5,12 @@ export function TaskList({
   filter,
   searchQuery,
   tasks,
+  onAddSubtask,
   onArchiveTask,
+  onDeleteSubtask,
   onDeleteTask,
   onRestoreTask,
+  onToggleSubtask,
   onToggleTask,
   onUpdateTask,
 }) {
@@ -21,9 +24,12 @@ export function TaskList({
         <TaskItem
           key={task.id}
           task={task}
+          onAddSubtask={onAddSubtask}
           onArchiveTask={onArchiveTask}
+          onDeleteSubtask={onDeleteSubtask}
           onDeleteTask={onDeleteTask}
           onRestoreTask={onRestoreTask}
+          onToggleSubtask={onToggleSubtask}
           onToggleTask={onToggleTask}
           onUpdateTask={onUpdateTask}
         />
