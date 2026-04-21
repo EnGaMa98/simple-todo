@@ -18,7 +18,9 @@ const formatDate = (isoDate) =>
 
 export function TaskItem({
   task,
+  onArchiveTask,
   onDeleteTask,
+  onRestoreTask,
   onToggleTask,
   onUpdateTask,
 }) {
@@ -28,8 +30,13 @@ export function TaskItem({
   const [draftDueDate, setDraftDueDate] = useState(task.dueDate ?? '')
   const [draftTags, setDraftTags] = useState((task.tags ?? []).join(', '))
 
+  const isArchived = Boolean(task.archivedAt)
   const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium
-  const dueState = task.completed ? 'completed' : getTaskDueState(task)
+  const dueState = isArchived
+    ? 'archived'
+    : task.completed
+      ? 'completed'
+      : getTaskDueState(task)
   const dueDateLabel = getDueDateLabel(task)
 
   const openEditor = () => {
@@ -78,17 +85,27 @@ export function TaskItem({
   }
 
   return (
-    <li className={`task-item ${task.completed ? 'is-completed' : ''}`}>
+    <li
+      className={`task-item ${task.completed ? 'is-completed' : ''} ${
+        isArchived ? 'is-archived' : ''
+      }`}
+    >
       <div className="task-main">
-        <input
-          className="task-checkbox"
-          type="checkbox"
-          checked={task.completed}
-          onChange={() => onToggleTask(task.id)}
-          aria-label={`Marcar ${task.title} como ${
-            task.completed ? 'pendiente' : 'completada'
-          }`}
-        />
+        {isArchived ? (
+          <span className="task-archive-indicator" aria-hidden="true">
+            AR
+          </span>
+        ) : (
+          <input
+            className="task-checkbox"
+            type="checkbox"
+            checked={task.completed}
+            onChange={() => onToggleTask(task.id)}
+            aria-label={`Marcar ${task.title} como ${
+              task.completed ? 'pendiente' : 'completada'
+            }`}
+          />
+        )}
 
         <div className="task-content">
           <div className="task-meta">
@@ -98,10 +115,18 @@ export function TaskItem({
             <span className={`task-due due-${dueState}`}>{dueDateLabel}</span>
             <span
               className={`task-status ${
-                task.completed ? 'status-completed' : 'status-active'
+                isArchived
+                  ? 'status-archived'
+                  : task.completed
+                    ? 'status-completed'
+                    : 'status-active'
               }`}
             >
-              {task.completed ? 'Completada' : 'Activa'}
+              {isArchived
+                ? 'Archivada'
+                : task.completed
+                  ? 'Completada'
+                  : 'Activa'}
             </span>
             <span className="task-date">Rev. {formatDate(task.updatedAt)}</span>
           </div>
@@ -164,6 +189,11 @@ export function TaskItem({
               <p className="task-helper">
                 {priorityMeta.helper} - Creada {formatDate(task.createdAt)}
               </p>
+              {isArchived ? (
+                <p className="task-helper">
+                  Archivada {formatDate(task.archivedAt)}
+                </p>
+              ) : null}
               {task.tags?.length > 0 ? (
                 <div className="task-tags" aria-label="Etiquetas de la tarea">
                   {task.tags.map((tag) => (
@@ -206,20 +236,48 @@ export function TaskItem({
           </>
         ) : (
           <>
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={openEditor}
-            >
-              Editar
-            </button>
-            <button
-              className="ghost-button danger-button"
-              type="button"
-              onClick={() => onDeleteTask(task.id)}
-            >
-              Eliminar
-            </button>
+            {isArchived ? (
+              <>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onRestoreTask(task.id)}
+                >
+                  Restaurar
+                </button>
+                <button
+                  className="ghost-button danger-button"
+                  type="button"
+                  onClick={() => onDeleteTask(task.id)}
+                >
+                  Eliminar
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={openEditor}
+                >
+                  Editar
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => onArchiveTask(task.id)}
+                >
+                  Archivar
+                </button>
+                <button
+                  className="ghost-button danger-button"
+                  type="button"
+                  onClick={() => onDeleteTask(task.id)}
+                >
+                  Eliminar
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

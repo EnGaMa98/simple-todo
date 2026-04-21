@@ -363,7 +363,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 14px;
   margin: 22px 0;
 }
@@ -406,6 +406,7 @@
 }
 
 .clear-button {
+  grid-column: span 2;
   min-height: auto;
 }
 
@@ -473,6 +474,10 @@
   background: rgba(246, 244, 238, 0.8);
 }
 
+.task-item.is-archived {
+  background: rgba(241, 239, 233, 0.86);
+}
+
 .task-main {
   min-width: 0;
   display: flex;
@@ -486,6 +491,20 @@
   margin-top: 4px;
   accent-color: #2e382d;
   cursor: pointer;
+}
+
+.task-archive-indicator {
+  width: 30px;
+  height: 30px;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(34, 45, 34, 0.08);
+  color: var(--heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .task-content {
@@ -551,6 +570,11 @@
   background: rgba(74, 131, 110, 0.14);
 }
 
+.due-archived {
+  color: #526152;
+  background: rgba(78, 94, 82, 0.12);
+}
+
 .due-none {
   color: var(--muted);
   background: rgba(21, 31, 24, 0.05);
@@ -568,6 +592,11 @@
 .status-completed {
   color: #516054;
   background: rgba(78, 94, 82, 0.12);
+}
+
+.status-archived {
+  color: #566255;
+  background: rgba(94, 106, 96, 0.14);
 }
 
 .task-date {
@@ -665,6 +694,33 @@
   color: var(--muted);
 }
 
+.undo-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10;
+  width: min(420px, calc(100vw - 28px));
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(30, 38, 30, 0.14);
+  border-radius: 22px;
+  background: rgba(248, 245, 239, 0.96);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.undo-toast p {
+  margin: 0;
+  color: var(--heading);
+  font-weight: 600;
+}
+
+.undo-toast-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -736,8 +792,15 @@
   }
 
   .task-actions,
-  .filter-bar {
+  .filter-bar,
+  .undo-toast-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .undo-toast {
+    right: 14px;
+    bottom: 14px;
+    width: calc(100vw - 28px);
   }
 }

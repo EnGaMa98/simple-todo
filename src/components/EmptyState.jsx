@@ -29,6 +29,11 @@ const EMPTY_MESSAGES = {
     description:
       'Cuando cierres una tarea aparecera aqui para dejar rastro del avance.',
   },
+  archived: {
+    title: 'Archivo vacio',
+    description:
+      'Las tareas archivadas saldran del panel diario y quedaran aqui para consulta o restauracion.',
+  },
 }
 
 export function EmptyState({ filter, searchQuery }) {

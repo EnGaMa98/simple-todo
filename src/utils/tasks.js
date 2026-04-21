@@ -31,6 +31,38 @@ export const normalizeTagsInput = (value) => {
   ]
 }
 
+export const normalizeSubtasks = (value) => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter(
+      (subtask) =>
+        typeof subtask?.id === 'string' &&
+        typeof subtask?.title === 'string' &&
+        typeof subtask?.completed === 'boolean',
+    )
+    .map((subtask) => ({
+      id: subtask.id,
+      title: subtask.title.trim(),
+      completed: subtask.completed,
+    }))
+    .filter((subtask) => subtask.title.length > 0)
+}
+
+export const getSubtaskStats = (task) => {
+  const subtasks = normalizeSubtasks(task.subtasks)
+  const total = subtasks.length
+  const completed = subtasks.filter((subtask) => subtask.completed).length
+
+  return {
+    total,
+    completed,
+    remaining: total - completed,
+  }
+}
+
 export const formatDateLabel = (value, options) => {
   if (!value) {
     return 'sin fecha'
@@ -126,12 +158,23 @@ const getDueWeight = (task, todayKey) => {
   return 0
 }
 
+export const isTaskArchived = (task) => Boolean(task.archivedAt)
+
 export const doesTaskMatchFilter = (
   task,
   filter,
   todayKey = getTodayDateKey(),
 ) => {
+  const isArchived = isTaskArchived(task)
   const dueState = getTaskDueState(task, todayKey)
+
+  if (filter === 'archived') {
+    return isArchived
+  }
+
+  if (isArchived) {
+    return false
+  }
 
   if (filter === 'active') {
     return !task.completed
@@ -157,7 +200,7 @@ export const doesTaskMatchFilter = (
 }
 
 export const getFilterCounts = (tasks, todayKey = getTodayDateKey()) => ({
-  all: tasks.length,
+  all: tasks.filter((task) => !isTaskArchived(task)).length,
   active: tasks.filter((task) => doesTaskMatchFilter(task, 'active', todayKey))
     .length,
   today: tasks.filter((task) => doesTaskMatchFilter(task, 'today', todayKey))
@@ -171,6 +214,7 @@ export const getFilterCounts = (tasks, todayKey = getTodayDateKey()) => ({
   completed: tasks.filter((task) =>
     doesTaskMatchFilter(task, 'completed', todayKey),
   ).length,
+  archived: tasks.filter((task) => doesTaskMatchFilter(task, 'archived')).length,
 })
 
 export const doesTaskMatchSearch = (task, searchQuery) => {
@@ -218,7 +262,9 @@ export const sortTasks = (tasks, sortBy) =>
   })
 
 export const getFocusTask = (tasks, todayKey = getTodayDateKey()) => {
-  const activeTasks = tasks.filter((task) => !task.completed)
+  const activeTasks = tasks.filter(
+    (task) => !task.completed && !isTaskArchived(task),
+  )
 
   if (activeTasks.length === 0) {
     return null

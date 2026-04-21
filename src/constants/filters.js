@@ -5,4 +5,5 @@ export const FILTER_OPTIONS = [
   { value: 'upcoming', label: 'Proximas' },
   { value: 'overdue', label: 'Vencidas' },
   { value: 'completed', label: 'Completadas' },
+  { value: 'archived', label: 'Archivadas' },
 ]

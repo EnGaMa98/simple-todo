@@ -5,6 +5,7 @@ import { SortBar } from './components/SortBar'
 import { TaskForm } from './components/TaskForm'
 import { TaskList } from './components/TaskList'
 import { TaskStats } from './components/TaskStats'
+import { UndoToast } from './components/UndoToast'
 import { FILTER_OPTIONS } from './constants/filters'
 import { PRIORITY_META } from './constants/priorities'
 import { SORT_OPTIONS } from './constants/sortOptions'
@@ -16,6 +17,7 @@ import {
   getFilterCounts,
   getFocusTask,
   getTaskDueState,
+  isTaskArchived,
   normalizeTagsInput,
   sortTasks,
 } from './utils/tasks'
@@ -30,6 +32,7 @@ const createTask = ({ title, priority, dueDate, tags }) => {
     priority,
     dueDate,
     tags: normalizeTagsInput(tags),
+    archivedAt: null,
     createdAt: timestamp,
     updatedAt: timestamp,
   }
@@ -40,18 +43,34 @@ function App() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('recent')
+  const [undoState, setUndoState] = useState(null)
 
   useEffect(() => {
     saveTasks(tasks)
   }, [tasks])
 
-  const totalTasks = tasks.length
-  const completedTasks = tasks.filter((task) => task.completed).length
+  useEffect(() => {
+    if (!undoState) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setUndoState(null)
+    }, 5000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [undoState])
+
+  const workspaceTasks = tasks.filter((task) => !isTaskArchived(task))
+
+  const totalTasks = workspaceTasks.length
+  const archivedTasks = tasks.length - workspaceTasks.length
+  const completedTasks = workspaceTasks.filter((task) => task.completed).length
   const activeTasks = totalTasks - completedTasks
-  const overdueTasks = tasks.filter(
+  const overdueTasks = workspaceTasks.filter(
     (task) => !task.completed && getTaskDueState(task) === 'overdue',
   ).length
-  const dueTodayTasks = tasks.filter(
+  const dueTodayTasks = workspaceTasks.filter(
     (task) => !task.completed && getTaskDueState(task) === 'today',
   ).length
   const completionRate =
@@ -66,11 +85,30 @@ function App() {
     ),
     sortBy,
   )
-  const focusTask = getFocusTask(tasks)
+  const focusTask = getFocusTask(workspaceTasks)
   const focusTaskMeta = focusTask
     ? PRIORITY_META[focusTask.priority] ?? PRIORITY_META.medium
     : null
   const focusDueLabel = focusTask ? getDueDateLabel(focusTask) : null
+
+  const applyTaskMutation = (updater, undoMessage = null) => {
+    const nextTasks = updater(tasks)
+
+    if (nextTasks === tasks) {
+      return
+    }
+
+    setTasks(nextTasks)
+    setUndoState(
+      undoMessage
+        ? {
+            id: crypto.randomUUID(),
+            message: undoMessage,
+            previousTasks: tasks,
+          }
+        : null,
+    )
+  }
 
   const handleAddTask = ({ title, priority, dueDate, tags }) => {
     const trimmedTitle = title.trim()
@@ -79,36 +117,42 @@ function App() {
       return
     }
 
-    setTasks((currentTasks) => [
-      createTask({
-        title: trimmedTitle,
-        priority,
-        dueDate,
-        tags,
-      }),
-      ...currentTasks,
-    ])
+    applyTaskMutation(
+      (currentTasks) => [
+        createTask({
+          title: trimmedTitle,
+          priority,
+          dueDate,
+          tags,
+        }),
+        ...currentTasks,
+      ],
+      null,
+    )
   }
 
   const handleDeleteTask = (taskId) => {
-    setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== taskId),
+    applyTaskMutation(
+      (currentTasks) => currentTasks.filter((task) => task.id !== taskId),
+      'Tarea eliminada.',
     )
   }
 
   const handleToggleTask = (taskId) => {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) => {
-        if (task.id !== taskId) {
-          return task
-        }
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
 
-        return {
-          ...task,
-          completed: !task.completed,
-          updatedAt: new Date().toISOString(),
-        }
-      }),
+          return {
+            ...task,
+            completed: !task.completed,
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      null,
     )
   }
 
@@ -119,26 +163,92 @@ function App() {
       return
     }
 
-    setTasks((currentTasks) =>
-      currentTasks.map((task) => {
-        if (task.id !== taskId) {
-          return task
-        }
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
 
-        return {
-          ...task,
-          title: trimmedTitle,
-          priority: updates.priority ?? task.priority,
-          dueDate: updates.dueDate || null,
-          tags: normalizeTagsInput(updates.tags),
-          updatedAt: new Date().toISOString(),
-        }
-      }),
+          return {
+            ...task,
+            title: trimmedTitle,
+            priority: updates.priority ?? task.priority,
+            dueDate: updates.dueDate || null,
+            tags: normalizeTagsInput(updates.tags),
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      null,
     )
   }
 
-  const handleClearCompleted = () => {
-    setTasks((currentTasks) => currentTasks.filter((task) => !task.completed))
+  const handleArchiveTask = (taskId) => {
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
+
+          return {
+            ...task,
+            archivedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      'Tarea archivada.',
+    )
+  }
+
+  const handleRestoreTask = (taskId) => {
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
+
+          return {
+            ...task,
+            archivedAt: null,
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      null,
+    )
+  }
+
+  const handleArchiveCompleted = () => {
+    applyTaskMutation((currentTasks) => {
+      const archiveTimestamp = new Date().toISOString()
+      let hasChanges = false
+
+      const nextTasks = currentTasks.map((task) => {
+        if (!task.completed || task.archivedAt) {
+          return task
+        }
+
+        hasChanges = true
+
+        return {
+          ...task,
+          archivedAt: archiveTimestamp,
+          updatedAt: archiveTimestamp,
+        }
+      })
+
+      return hasChanges ? nextTasks : currentTasks
+    }, 'Completadas archivadas.')
+  }
+
+  const handleUndo = () => {
+    if (!undoState) {
+      return
+    }
+
+    setTasks(undoState.previousTasks)
+    setUndoState(null)
   }
 
   return (
@@ -227,11 +337,12 @@ function App() {
           <TaskStats
             totalTasks={totalTasks}
             activeTasks={activeTasks}
+            archivedTasks={archivedTasks}
             completedTasks={completedTasks}
             overdueTasks={overdueTasks}
             dueTodayTasks={dueTodayTasks}
             completionRate={completionRate}
-            onClearCompleted={handleClearCompleted}
+            onArchiveCompleted={handleArchiveCompleted}
           />
 
           <FilterBar
@@ -245,12 +356,22 @@ function App() {
             filter={activeFilter}
             searchQuery={searchQuery}
             tasks={filteredTasks}
+            onArchiveTask={handleArchiveTask}
             onDeleteTask={handleDeleteTask}
+            onRestoreTask={handleRestoreTask}
             onToggleTask={handleToggleTask}
             onUpdateTask={handleUpdateTask}
           />
         </section>
       </main>
+
+      {undoState ? (
+        <UndoToast
+          message={undoState.message}
+          onUndo={handleUndo}
+          onDismiss={() => setUndoState(null)}
+        />
+      ) : null}
     </div>
   )
 }

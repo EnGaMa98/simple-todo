@@ -1,11 +1,12 @@
 export function TaskStats({
   totalTasks,
   activeTasks,
+  archivedTasks,
   completedTasks,
   overdueTasks,
   dueTodayTasks,
   completionRate,
-  onClearCompleted,
+  onArchiveCompleted,
 }) {
   return (
     <section className="stats-grid" aria-label="Resumen de tareas">
@@ -24,6 +25,11 @@ export function TaskStats({
         <strong>{overdueTasks}</strong>
       </article>
 
+      <article className="stat-card">
+        <span>Archivadas</span>
+        <strong>{archivedTasks}</strong>
+      </article>
+
       <article className="progress-card">
         <div className="progress-copy">
           <span>Ritmo actual</span>
@@ -38,10 +44,10 @@ export function TaskStats({
       <button
         className="ghost-button clear-button"
         type="button"
-        onClick={onClearCompleted}
+        onClick={onArchiveCompleted}
         disabled={completedTasks === 0}
       >
-        Limpiar completadas
+        Archivar completadas
       </button>
     </section>
   )
