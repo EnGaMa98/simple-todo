@@ -16,16 +16,18 @@ import {
   getDueDateLabel,
   getFilterCounts,
   getFocusTask,
+  getNextRecurringDueDate,
   getSubtaskStats,
   getTaskDueState,
   isTaskArchived,
   isTaskInMyDay,
+  normalizeRecurrence,
   normalizeSubtasks,
   normalizeTagsInput,
   sortTasks,
 } from './utils/tasks'
 
-const createTask = ({ title, priority, dueDate, tags }) => {
+const createTask = ({ title, priority, dueDate, tags, recurrence }) => {
   const timestamp = new Date().toISOString()
 
   return {
@@ -36,6 +38,34 @@ const createTask = ({ title, priority, dueDate, tags }) => {
     dueDate,
     tags: normalizeTagsInput(tags),
     subtasks: [],
+    recurrence: normalizeRecurrence(recurrence),
+    recurringSourceId: null,
+    generatedFromTaskId: null,
+    isInMyDay: false,
+    archivedAt: null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+}
+
+const createNextRecurringTask = (task) => {
+  const timestamp = new Date().toISOString()
+
+  return {
+    id: crypto.randomUUID(),
+    title: task.title,
+    completed: false,
+    priority: task.priority,
+    dueDate: getNextRecurringDueDate(task.dueDate, task.recurrence),
+    tags: [...task.tags],
+    subtasks: task.subtasks.map((subtask) => ({
+      id: crypto.randomUUID(),
+      title: subtask.title,
+      completed: false,
+    })),
+    recurrence: task.recurrence,
+    recurringSourceId: task.recurringSourceId ?? task.id,
+    generatedFromTaskId: task.id,
     isInMyDay: false,
     archivedAt: null,
     createdAt: timestamp,
@@ -117,7 +147,7 @@ function App() {
     )
   }
 
-  const handleAddTask = ({ title, priority, dueDate, tags }) => {
+  const handleAddTask = ({ title, priority, dueDate, tags, recurrence }) => {
     const trimmedTitle = title.trim()
 
     if (!trimmedTitle) {
@@ -131,6 +161,7 @@ function App() {
           priority,
           dueDate,
           tags,
+          recurrence,
         }),
         ...currentTasks,
       ],
@@ -147,25 +178,55 @@ function App() {
 
   const handleToggleTask = (taskId) => {
     applyTaskMutation(
-      (currentTasks) =>
-        currentTasks.map((task) => {
+      (currentTasks) => {
+        const targetTask = currentTasks.find((task) => task.id === taskId)
+
+        if (!targetTask) {
+          return currentTasks
+        }
+
+        const isCompleting = !targetTask.completed
+        const recurringTask = normalizeRecurrence(targetTask.recurrence) !== 'none'
+        const alreadyGenerated = currentTasks.some(
+          (task) => task.generatedFromTaskId === taskId,
+        )
+
+        let nextTasks = currentTasks.map((task) => {
           if (task.id !== taskId) {
             return task
           }
 
           return {
             ...task,
-            completed: !task.completed,
-            isInMyDay: !task.completed ? false : task.isInMyDay,
-            subtasks: task.completed
-              ? task.subtasks
-              : task.subtasks.map((subtask) => ({
+            completed: isCompleting,
+            isInMyDay: isCompleting ? false : task.isInMyDay,
+            subtasks: isCompleting
+              ? task.subtasks.map((subtask) => ({
                   ...subtask,
                   completed: true,
-                })),
+                }))
+              : task.subtasks,
             updatedAt: new Date().toISOString(),
           }
-        }),
+        })
+
+        if (isCompleting && recurringTask && !alreadyGenerated) {
+          nextTasks = [createNextRecurringTask(targetTask), ...nextTasks]
+        }
+
+        if (!isCompleting && recurringTask) {
+          nextTasks = nextTasks.filter(
+            (task) =>
+              !(
+                task.generatedFromTaskId === taskId &&
+                !task.completed &&
+                !task.archivedAt
+              ),
+          )
+        }
+
+        return nextTasks
+      },
       null,
     )
   }
@@ -190,6 +251,10 @@ function App() {
             priority: updates.priority ?? task.priority,
             dueDate: updates.dueDate || null,
             tags: normalizeTagsInput(updates.tags),
+            recurrence:
+              updates.recurrence !== undefined
+                ? normalizeRecurrence(updates.recurrence)
+                : task.recurrence,
             subtasks:
               updates.subtasks !== undefined
                 ? normalizeSubtasks(updates.subtasks)

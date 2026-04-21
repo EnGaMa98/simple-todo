@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { PRIORITY_OPTIONS, PRIORITY_META } from '../constants/priorities'
+import { RECURRENCE_META, RECURRENCE_OPTIONS } from '../constants/recurrence'
 import {
   formatDateLabel,
   getDueDateLabel,
+  getRecurrenceLabel,
   getSubtaskStats,
   getTaskDueState,
 } from '../utils/tasks'
@@ -34,6 +36,7 @@ export function TaskItem({
   const [draftPriority, setDraftPriority] = useState(task.priority ?? 'medium')
   const [draftDueDate, setDraftDueDate] = useState(task.dueDate ?? '')
   const [draftTags, setDraftTags] = useState((task.tags ?? []).join(', '))
+  const [draftRecurrence, setDraftRecurrence] = useState(task.recurrence ?? 'none')
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
 
   const isArchived = Boolean(task.archivedAt)
@@ -53,6 +56,7 @@ export function TaskItem({
     setDraftPriority(task.priority ?? 'medium')
     setDraftDueDate(task.dueDate ?? '')
     setDraftTags((task.tags ?? []).join(', '))
+    setDraftRecurrence(task.recurrence ?? 'none')
     setIsEditing(true)
   }
 
@@ -71,6 +75,7 @@ export function TaskItem({
       priority: draftPriority,
       dueDate: draftDueDate || null,
       tags: draftTags,
+      recurrence: draftRecurrence,
     })
     setIsEditing(false)
   }
@@ -80,6 +85,7 @@ export function TaskItem({
     setDraftPriority(task.priority ?? 'medium')
     setDraftDueDate(task.dueDate ?? '')
     setDraftTags((task.tags ?? []).join(', '))
+    setDraftRecurrence(task.recurrence ?? 'none')
     setIsEditing(false)
   }
 
@@ -133,6 +139,11 @@ export function TaskItem({
               {priorityMeta.label}
             </span>
             <span className={`task-due due-${dueState}`}>{dueDateLabel}</span>
+            {task.recurrence !== 'none' ? (
+              <span className="task-recurrence-chip">
+                {getRecurrenceLabel(task.recurrence)}
+              </span>
+            ) : null}
             {isInMyDay ? <span className="task-my-day-chip">Mi dia</span> : null}
             {subtaskStats.total > 0 ? (
               <span className="task-subtask-progress">
@@ -192,6 +203,22 @@ export function TaskItem({
                     placeholder="cliente, sprint, casa"
                   />
                 </label>
+
+                <label className="field-stack" htmlFor={`recurrence-${task.id}`}>
+                  <span className="field-label">Repeticion</span>
+                  <select
+                    id={`recurrence-${task.id}`}
+                    className="sort-select"
+                    value={draftRecurrence}
+                    onChange={(event) => setDraftRecurrence(event.target.value)}
+                  >
+                    {RECURRENCE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="priority-picker priority-picker-inline">
@@ -235,6 +262,12 @@ export function TaskItem({
                     day: '2-digit',
                     month: 'long',
                   })}
+                </p>
+              ) : null}
+              {task.recurrence !== 'none' ? (
+                <p className="task-helper">
+                  Se repite de forma{' '}
+                  {(RECURRENCE_META[task.recurrence] ?? RECURRENCE_META.none).label.toLowerCase()}
                 </p>
               ) : null}
               {task.subtasks.length > 0 ? (

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { PRIORITY_OPTIONS } from '../constants/priorities'
+import { RECURRENCE_OPTIONS } from '../constants/recurrence'
 
 export function TaskForm({ onSubmit }) {
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState('medium')
   const [dueDate, setDueDate] = useState('')
   const [tagsInput, setTagsInput] = useState('')
+  const [recurrence, setRecurrence] = useState('none')
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -19,11 +21,13 @@ export function TaskForm({ onSubmit }) {
       priority,
       dueDate: dueDate || null,
       tags: tagsInput,
+      recurrence,
     })
     setTitle('')
     setPriority('medium')
     setDueDate('')
     setTagsInput('')
+    setRecurrence('none')
   }
 
   return (
@@ -63,6 +67,22 @@ export function TaskForm({ onSubmit }) {
               onChange={(event) => setTagsInput(event.target.value)}
               placeholder="cliente, sprint, casa"
             />
+          </label>
+
+          <label className="field-stack" htmlFor="task-recurrence">
+            <span className="field-label">Repeticion</span>
+            <select
+              id="task-recurrence"
+              className="sort-select"
+              value={recurrence}
+              onChange={(event) => setRecurrence(event.target.value)}
+            >
+              {RECURRENCE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 

@@ -1,5 +1,9 @@
 import { PRIORITY_META } from '../constants/priorities'
-import { normalizeSubtasks, normalizeTagsInput } from './tasks'
+import {
+  normalizeRecurrence,
+  normalizeSubtasks,
+  normalizeTagsInput,
+} from './tasks'
 
 const STORAGE_KEY = 'portfolio-todo-list'
 
@@ -31,6 +35,15 @@ export const loadTasks = () => {
         archivedAt:
           typeof task.archivedAt === 'string' && task.archivedAt.trim()
             ? task.archivedAt
+            : null,
+        recurrence: normalizeRecurrence(task.recurrence),
+        recurringSourceId:
+          typeof task.recurringSourceId === 'string' && task.recurringSourceId
+            ? task.recurringSourceId
+            : null,
+        generatedFromTaskId:
+          typeof task.generatedFromTaskId === 'string' && task.generatedFromTaskId
+            ? task.generatedFromTaskId
             : null,
         isInMyDay: Boolean(task.isInMyDay),
         priority: PRIORITY_META[task.priority] ? task.priority : 'medium',

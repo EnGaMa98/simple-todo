@@ -286,7 +286,7 @@
 .task-form-secondary,
 .task-editor-grid {
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -521,6 +521,7 @@
 
 .task-priority,
 .task-due,
+.task-recurrence-chip,
 .task-my-day-chip,
 .task-subtask-progress,
 .task-status,
@@ -550,6 +551,12 @@
 .task-my-day-chip {
   color: #5e4716;
   background: rgba(204, 168, 101, 0.22);
+  font-weight: 700;
+}
+
+.task-recurrence-chip {
+  color: #4f4a75;
+  background: rgba(109, 102, 156, 0.16);
   font-weight: 700;
 }
 

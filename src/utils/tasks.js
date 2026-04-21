@@ -1,4 +1,5 @@
 import { PRIORITY_META } from '../constants/priorities'
+import { RECURRENCE_META } from '../constants/recurrence'
 
 const padDatePart = (value) => String(value).padStart(2, '0')
 
@@ -17,6 +18,9 @@ const toTimestamp = (value) => {
 
   return Number.isNaN(timestamp) ? 0 : timestamp
 }
+
+const toDateKey = (date) =>
+  `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`
 
 export const normalizeTagsInput = (value) => {
   const source = Array.isArray(value) ? value.join(',') : value ?? ''
@@ -51,6 +55,9 @@ export const normalizeSubtasks = (value) => {
     .filter((subtask) => subtask.title.length > 0)
 }
 
+export const normalizeRecurrence = (value) =>
+  RECURRENCE_META[value] ? value : 'none'
+
 export const getSubtaskStats = (task) => {
   const subtasks = normalizeSubtasks(task.subtasks)
   const total = subtasks.length
@@ -71,6 +78,37 @@ export const formatDateLabel = (value, options) => {
   return new Intl.DateTimeFormat('es-ES', options).format(
     new Date(`${value}T12:00:00`),
   )
+}
+
+export const getRecurrenceLabel = (value) =>
+  (RECURRENCE_META[normalizeRecurrence(value)] ?? RECURRENCE_META.none).label
+
+export const getNextRecurringDueDate = (
+  dueDate,
+  recurrence,
+  todayKey = getTodayDateKey(),
+) => {
+  const normalizedRecurrence = normalizeRecurrence(recurrence)
+
+  if (normalizedRecurrence === 'none') {
+    return null
+  }
+
+  const baseDate = new Date(`${dueDate ?? todayKey}T12:00:00`)
+
+  if (normalizedRecurrence === 'daily') {
+    baseDate.setDate(baseDate.getDate() + 1)
+  }
+
+  if (normalizedRecurrence === 'weekly') {
+    baseDate.setDate(baseDate.getDate() + 7)
+  }
+
+  if (normalizedRecurrence === 'monthly') {
+    baseDate.setMonth(baseDate.getMonth() + 1)
+  }
+
+  return toDateKey(baseDate)
 }
 
 export const getTaskDueState = (task, todayKey = getTodayDateKey()) => {
