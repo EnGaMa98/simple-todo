@@ -3,6 +3,7 @@ export function TaskStats({
   activeTasks,
   archivedTasks,
   completedTasks,
+  myDayTasks,
   overdueTasks,
   dueTodayTasks,
   completionRate,
@@ -21,13 +22,13 @@ export function TaskStats({
       </article>
 
       <article className="stat-card">
-        <span>Vencidas</span>
-        <strong>{overdueTasks}</strong>
+        <span>Mi dia</span>
+        <strong>{myDayTasks}</strong>
       </article>
 
       <article className="stat-card">
-        <span>Archivadas</span>
-        <strong>{archivedTasks}</strong>
+        <span>Vencidas</span>
+        <strong>{overdueTasks}</strong>
       </article>
 
       <article className="progress-card">
@@ -39,6 +40,11 @@ export function TaskStats({
           <span style={{ width: `${completionRate}%` }} />
         </div>
         <p>{`${completedTasks} completadas de ${totalTasks || 0} - ${dueTodayTasks} para hoy`}</p>
+      </article>
+
+      <article className="stat-card">
+        <span>Archivadas</span>
+        <strong>{archivedTasks}</strong>
       </article>
 
       <button

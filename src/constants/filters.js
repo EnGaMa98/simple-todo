@@ -1,5 +1,6 @@
 export const FILTER_OPTIONS = [
   { value: 'all', label: 'Todas' },
+  { value: 'my-day', label: 'Mi dia' },
   { value: 'active', label: 'Activas' },
   { value: 'today', label: 'Hoy' },
   { value: 'upcoming', label: 'Proximas' },

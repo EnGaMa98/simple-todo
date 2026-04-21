@@ -10,6 +10,7 @@ export function TaskList({
   onDeleteSubtask,
   onDeleteTask,
   onRestoreTask,
+  onToggleMyDay,
   onToggleSubtask,
   onToggleTask,
   onUpdateTask,
@@ -29,6 +30,7 @@ export function TaskList({
           onDeleteSubtask={onDeleteSubtask}
           onDeleteTask={onDeleteTask}
           onRestoreTask={onRestoreTask}
+          onToggleMyDay={onToggleMyDay}
           onToggleSubtask={onToggleSubtask}
           onToggleTask={onToggleTask}
           onUpdateTask={onUpdateTask}

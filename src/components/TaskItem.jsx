@@ -24,6 +24,7 @@ export function TaskItem({
   onDeleteSubtask,
   onDeleteTask,
   onRestoreTask,
+  onToggleMyDay,
   onToggleSubtask,
   onToggleTask,
   onUpdateTask,
@@ -37,6 +38,7 @@ export function TaskItem({
 
   const isArchived = Boolean(task.archivedAt)
   const isSubtaskReadOnly = isArchived || task.completed
+  const isInMyDay = Boolean(task.isInMyDay) && !task.completed && !isArchived
   const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium
   const subtaskStats = getSubtaskStats(task)
   const dueState = isArchived
@@ -131,6 +133,7 @@ export function TaskItem({
               {priorityMeta.label}
             </span>
             <span className={`task-due due-${dueState}`}>{dueDateLabel}</span>
+            {isInMyDay ? <span className="task-my-day-chip">Mi dia</span> : null}
             {subtaskStats.total > 0 ? (
               <span className="task-subtask-progress">
                 {subtaskStats.completed}/{subtaskStats.total} pasos
@@ -330,6 +333,13 @@ export function TaskItem({
                   onClick={openEditor}
                 >
                   Editar
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => onToggleMyDay(task.id)}
+                >
+                  {isInMyDay ? 'Quitar de Mi dia' : 'Mi dia'}
                 </button>
                 <button
                   className="ghost-button"

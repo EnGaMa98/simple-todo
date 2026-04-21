@@ -159,6 +159,8 @@ const getDueWeight = (task, todayKey) => {
 }
 
 export const isTaskArchived = (task) => Boolean(task.archivedAt)
+export const isTaskInMyDay = (task) =>
+  Boolean(task.isInMyDay) && !task.completed && !isTaskArchived(task)
 
 export const doesTaskMatchFilter = (
   task,
@@ -174,6 +176,10 @@ export const doesTaskMatchFilter = (
 
   if (isArchived) {
     return false
+  }
+
+  if (filter === 'my-day') {
+    return isTaskInMyDay(task)
   }
 
   if (filter === 'active') {
@@ -201,6 +207,7 @@ export const doesTaskMatchFilter = (
 
 export const getFilterCounts = (tasks, todayKey = getTodayDateKey()) => ({
   all: tasks.filter((task) => !isTaskArchived(task)).length,
+  'my-day': tasks.filter((task) => doesTaskMatchFilter(task, 'my-day')).length,
   active: tasks.filter((task) => doesTaskMatchFilter(task, 'active', todayKey))
     .length,
   today: tasks.filter((task) => doesTaskMatchFilter(task, 'today', todayKey))
@@ -272,6 +279,7 @@ export const getFocusTask = (tasks, todayKey = getTodayDateKey()) => {
 
   return [...activeTasks].sort((leftTask, rightTask) => {
     return (
+      Number(isTaskInMyDay(rightTask)) - Number(isTaskInMyDay(leftTask)) ||
       getDueWeight(rightTask, todayKey) - getDueWeight(leftTask, todayKey) ||
       compareByDueDate(leftTask, rightTask) ||
       compareByPriority(leftTask, rightTask) ||

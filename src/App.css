@@ -521,6 +521,7 @@
 
 .task-priority,
 .task-due,
+.task-my-day-chip,
 .task-subtask-progress,
 .task-status,
 .task-date {
@@ -543,6 +544,12 @@
 .task-subtask-progress {
   color: #445345;
   background: rgba(34, 45, 34, 0.08);
+  font-weight: 700;
+}
+
+.task-my-day-chip {
+  color: #5e4716;
+  background: rgba(204, 168, 101, 0.22);
   font-weight: 700;
 }
 

@@ -32,6 +32,7 @@ export const loadTasks = () => {
           typeof task.archivedAt === 'string' && task.archivedAt.trim()
             ? task.archivedAt
             : null,
+        isInMyDay: Boolean(task.isInMyDay),
         priority: PRIORITY_META[task.priority] ? task.priority : 'medium',
         dueDate:
           typeof task.dueDate === 'string' && task.dueDate.trim()

@@ -19,6 +19,7 @@ import {
   getSubtaskStats,
   getTaskDueState,
   isTaskArchived,
+  isTaskInMyDay,
   normalizeSubtasks,
   normalizeTagsInput,
   sortTasks,
@@ -35,6 +36,7 @@ const createTask = ({ title, priority, dueDate, tags }) => {
     dueDate,
     tags: normalizeTagsInput(tags),
     subtasks: [],
+    isInMyDay: false,
     archivedAt: null,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -70,6 +72,7 @@ function App() {
   const archivedTasks = tasks.length - workspaceTasks.length
   const completedTasks = workspaceTasks.filter((task) => task.completed).length
   const activeTasks = totalTasks - completedTasks
+  const myDayTasks = workspaceTasks.filter((task) => isTaskInMyDay(task)).length
   const overdueTasks = workspaceTasks.filter(
     (task) => !task.completed && getTaskDueState(task) === 'overdue',
   ).length
@@ -93,6 +96,7 @@ function App() {
     ? PRIORITY_META[focusTask.priority] ?? PRIORITY_META.medium
     : null
   const focusDueLabel = focusTask ? getDueDateLabel(focusTask) : null
+  const focusPrefix = focusTask?.isInMyDay ? 'Mi dia' : focusDueLabel
 
   const applyTaskMutation = (updater, undoMessage = null) => {
     const nextTasks = updater(tasks)
@@ -152,6 +156,7 @@ function App() {
           return {
             ...task,
             completed: !task.completed,
+            isInMyDay: !task.completed ? false : task.isInMyDay,
             subtasks: task.completed
               ? task.subtasks
               : task.subtasks.map((subtask) => ({
@@ -206,6 +211,7 @@ function App() {
 
           return {
             ...task,
+            isInMyDay: false,
             archivedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }
@@ -246,6 +252,7 @@ function App() {
 
         return {
           ...task,
+          isInMyDay: false,
           archivedAt: archiveTimestamp,
           updatedAt: archiveTimestamp,
         }
@@ -350,6 +357,28 @@ function App() {
     )
   }
 
+  const handleToggleMyDay = (taskId) => {
+    applyTaskMutation(
+      (currentTasks) =>
+        currentTasks.map((task) => {
+          if (task.id !== taskId) {
+            return task
+          }
+
+          if (task.completed || task.archivedAt) {
+            return task
+          }
+
+          return {
+            ...task,
+            isInMyDay: !task.isInMyDay,
+            updatedAt: new Date().toISOString(),
+          }
+        }),
+      null,
+    )
+  }
+
   return (
     <div className="app-shell">
       <main className="app">
@@ -372,8 +401,8 @@ function App() {
               <strong>{completionRate}%</strong>
             </article>
             <article>
-              <span>Vencidas</span>
-              <strong>{overdueTasks}</strong>
+              <span>Mi dia</span>
+              <strong>{myDayTasks}</strong>
             </article>
           </div>
 
@@ -382,7 +411,7 @@ function App() {
             {focusTask ? (
               <>
                 <h2>{focusTask.title}</h2>
-                <p>{`${focusDueLabel} - Prioridad ${focusTaskMeta.label.toLowerCase()}`}</p>
+                <p>{`${focusPrefix} - Prioridad ${focusTaskMeta.label.toLowerCase()}`}</p>
               </>
             ) : (
               <>
@@ -438,6 +467,7 @@ function App() {
             activeTasks={activeTasks}
             archivedTasks={archivedTasks}
             completedTasks={completedTasks}
+            myDayTasks={myDayTasks}
             overdueTasks={overdueTasks}
             dueTodayTasks={dueTodayTasks}
             completionRate={completionRate}
@@ -460,6 +490,7 @@ function App() {
             onDeleteSubtask={handleDeleteSubtask}
             onDeleteTask={handleDeleteTask}
             onRestoreTask={handleRestoreTask}
+            onToggleMyDay={handleToggleMyDay}
             onToggleSubtask={handleToggleSubtask}
             onToggleTask={handleToggleTask}
             onUpdateTask={handleUpdateTask}

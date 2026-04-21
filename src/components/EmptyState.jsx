@@ -9,6 +9,11 @@ const EMPTY_MESSAGES = {
     description:
       'Todo lo pendiente esta resuelto o todavia no has cargado nuevas tareas.',
   },
+  'my-day': {
+    title: 'Mi dia esta vacio',
+    description:
+      'Marca tareas clave con Mi dia para reunir aqui solo lo que quieres empujar hoy.',
+  },
   today: {
     title: 'Nada para hoy',
     description:
